@@ -82,17 +82,6 @@ CREATE TABLE estudiantes2 (
     indice INTEGER
 );
 
-CREATE TABLE estudiantes_tmp (
-    nombre TEXT,
-    codigo_carrera INTEGER,
-    edad INTEGER,
-    indice INTEGER
-);
-
-COPY estudiantes_tmp(nombre, codigo_carrera, edad, indice)
-FROM '\Program Files\PostgreSQL\16\data\estudiantes.csv'
-DELIMITER ',';
-
 INSERT INTO estudiantes2
 SELECT
     ROW_NUMBER() OVER (ORDER BY indice),
@@ -100,7 +89,7 @@ SELECT
     codigo_carrera,
     edad,
     indice
-FROM estudiantes_tmp
+FROM estudiantes
 ORDER BY indice;
 
 SELECT pg_size_pretty(pg_total_relation_size('estudiantes2'));
