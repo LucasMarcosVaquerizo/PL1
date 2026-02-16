@@ -21,6 +21,12 @@ SELECT oid FROM pg_database WHERE datname = 'pl1';
 
 SELECT pg_size_pretty(pg_total_relation_size('estudiantes'));
 
+SELECT
+    pg_database.datname,
+    pg_database_size(pg_database.datname) / 8192 AS bloques_usados
+FROM pg_database
+WHERE datname = current_database();
+
 
 SHOW data_directory;
 
