@@ -1,4 +1,7 @@
-CREATE TABLE estudiantes (
+SET app.ruta_estudiantes = 'D:/Universidad/Cursos/3o 2o cuatri/Bases de datos avanzadas/PL1-LocalData/estudiantes.csv';
+--CREATE DATABASE PL1;
+CREATE SCHEMA IF NOT EXISTS public;
+CREATE TABLE IF NOT EXISTS estudiantes (
     estudiante_id SERIAL PRIMARY KEY,
     nombre TEXT,
     codigo_carrera INT,
@@ -6,10 +9,15 @@ CREATE TABLE estudiantes (
     indice INT
 );
 
+DO $$
+BEGIN
+    EXECUTE format('
 COPY estudiantes(nombre, codigo_carrera, edad, indice)
-FROM '\Program Files\PostgreSQL\16\data\estudiantes.csv'
-DELIMITER ','
+FROM %L
+DELIMITER '',''
 CSV;
+', current_setting('app.ruta_estudiantes'));
+END $$;
 
 SELECT COUNT(*) FROM estudiantes;
 
