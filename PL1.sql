@@ -1,4 +1,4 @@
-SET app.ruta_estudiantes = 'D:/Universidad/Cursos/3o 2o cuatri/Bases de datos avanzadas/PL1-LocalData/estudiantes.csv';
+SET app.ruta_estudiantes = '\Program Files\PostgreSQL\16\data\estudiantes.csv';
 --CREATE DATABASE PL1;
 CREATE SCHEMA IF NOT EXISTS public;
 CREATE TABLE IF NOT EXISTS estudiantes (
@@ -112,3 +112,15 @@ SELECT
 FROM pg_stats
 WHERE tablename = 'estudiantes2'
   AND attname = 'indice';
+
+--Cuestión 7--
+
+DELETE FROM estudiantes
+WHERE estudiante_id IN (
+    SELECT estudiante_id
+    FROM estudiantes
+    ORDER BY random()
+    LIMIT 5000000
+);
+
+SELECT pg_size_pretty(pg_total_relation_size('estudiantes'));
