@@ -118,9 +118,25 @@ WHERE tablename = 'estudiantes2'
 DELETE FROM estudiantes
 WHERE estudiante_id IN (
     SELECT estudiante_id
-    FROM estudiantes
-    ORDER BY random()
+    FROM estudiantes TABLESAMPLE BERNOULLI (10) -- Muestrea el 10% de la tabla
     LIMIT 5000000
 );
 
 SELECT pg_size_pretty(pg_total_relation_size('estudiantes'));
+
+--Cuestión 8--
+
+INSERT INTO estudiantes(nombre, codigo_carrera, edad, indice)
+VALUES ('Pepe', 33, 19, 1300)
+RETURNING estudiante_id, ctid;
+
+SELECT estudiante_id, ctid FROM estudiantes
+WHERE estudiante_id = 30000000;
+
+--Cuestión 9--
+
+CREATE UNIQUE INDEX CONCURRENTLY idx_estudiante_id ON estudiantes (estudiante_id);
+CLUSTER estudiantes USING idx_estudiante_id;
+
+VACUUM FULL estudiantes;
+
