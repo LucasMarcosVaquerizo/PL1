@@ -140,3 +140,79 @@ CLUSTER estudiantes USING idx_estudiante_id;
 
 VACUUM FULL estudiantes;
 
+
+--cuestión 10--
+
+CREATE TABLE estudiantes3 (
+    estudiante_id SERIAL,
+    nombre TEXT,
+    codigo_carrera INT,
+    edad INT,
+    indice INT
+)
+PARTITION BY HASH (codigo_carrera);
+
+
+DO $$
+BEGIN
+    FOR i IN 0..19 LOOP
+        EXECUTE format(
+            'CREATE TABLE estudiantes3_p%s PARTITION OF estudiantes3
+             FOR VALUES WITH (MODULUS 20, REMAINDER %s);',
+            i, i
+        );
+    END LOOP;
+END $$;
+
+COPY estudiantes3(nombre, codigo_carrera, edad, indice)
+FROM '\Program Files\PostgreSQL\16\data\estudiantes.csv'
+DELIMITER ','
+CSV;
+
+ANALYZE estudiantes3;
+
+
+SELECT
+    relname AS particion,
+    relpages AS bloques
+FROM pg_class
+WHERE relname LIKE 'estudiantes3_p%'
+ORDER BY relname;
+
+
+--cuestión 11--
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM estudiantes3
+WHERE indice = 500;
+
+SELECT COUNT(*)
+FROM estudiantes3
+WHERE indice = 500;
+
+SELECT
+    relname,
+    reltuples,
+    relpages
+FROM pg_class
+WHERE relname LIKE 'estudiantes3_p%'
+ORDER BY relname;
+
+
+SELECT
+    tablename,
+    attname,
+    n_distinct
+FROM pg_stats
+WHERE tablename LIKE 'estudiantes3%'
+  AND attname = 'indice';
+
+SELECT *
+FROM estudiantes3
+WHERE codigo_carrera = 42
+  AND indice = 500;
+
+SELECT COUNT(*)
+FROM estudiantes3
+WHERE codigo_carrera = 42;
