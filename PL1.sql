@@ -216,3 +216,50 @@ WHERE codigo_carrera = 42
 SELECT COUNT(*)
 FROM estudiantes3
 WHERE codigo_carrera = 42;
+
+--cuestión 12--
+
+DROP TABLE estudiantes CASCADE;
+DROP TABLE estudiantes2 CASCADE;
+DROP TABLE estudiantes3 CASCADE;
+
+
+CREATE TABLE estudiantes2 (
+    estudiante_id INTEGER,
+    nombre TEXT,
+    codigo_carrera INTEGER,
+    edad INTEGER,
+    indice INTEGER
+);
+
+CREATE TEMP TABLE estudiantes_tmp (
+    nombre TEXT,
+    codigo_carrera INTEGER,
+    edad INTEGER,
+    indice INTEGER
+);
+
+COPY estudiantes_tmp(nombre, codigo_carrera, edad, indice)
+FROM '\Program Files\PostgreSQL\16\data\estudiantes.csv'
+DELIMITER ','
+CSV;
+
+--Tarda como un minuto
+INSERT INTO estudiantes2
+SELECT
+    ROW_NUMBER() OVER (ORDER BY indice),
+    nombre,
+    codigo_carrera,
+    edad,
+    indice
+FROM estudiantes_tmp
+ORDER BY indice;
+
+
+VACUUM ANALYZE estudiantes2;
+SELECT
+    relname,
+    relpages AS bloques,
+    reltuples AS tuplas_estimadas
+FROM pg_class
+WHERE relname = 'estudiantes2';
