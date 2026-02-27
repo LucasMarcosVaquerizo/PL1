@@ -263,3 +263,67 @@ SELECT
     reltuples AS tuplas_estimadas
 FROM pg_class
 WHERE relname = 'estudiantes2';
+
+
+--cuestión 13--
+
+-- 1. Habilitar la extensión de inspección de bajo nivel
+CREATE EXTENSION IF NOT EXISTS pageinspect;
+
+-- 2. Crear el índice (ajusta 'nombre_tabla' al nombre real de tu tabla)
+CREATE INDEX idx_estudiante_id ON estudiantes2 USING btree (estudiante_id);
+
+-- 3. Forzar actualización de estadísticas para que los datos sean reales
+VACUUM ANALYZE estudiantes2;
+
+SELECT
+    pg_relation_filepath('idx_estudiante_id') AS ruta_fisica,
+    pg_size_pretty(pg_relation_size('idx_estudiante_id')) AS tamaño_legible,
+    pg_relation_size('idx_estudiante_id') AS tamaño_bytes,
+    (pg_relation_size('idx_estudiante_id') / 8192) AS total_bloques_8kb
+FROM pg_class
+WHERE relname = 'idx_estudiante_id';
+
+SELECT * FROM bt_metap('idx_estudiante_id');
+SELECT
+    live_items AS tuplas_activas
+FROM bt_page_stats('idx_estudiante_id', 1);
+
+WITH RECURSIVE analisis_bloques AS (
+    -- Recorremos todos los bloques excepto la metapágina (bloque 0)
+    SELECT
+        blkno,
+        (bt_page_stats('idx_estudiante_id', blkno)).*
+    FROM generate_series(1, (pg_relation_size('idx_estudiante_id') / 8192) - 1) AS blkno
+)
+
+-- 1. Ver altura y raíz del árbol
+SELECT * FROM bt_metap('idx_estudiante_id');
+
+-- 3. Análisis de estructura y bloques por nivel
+SELECT type, COUNT(*), AVG(live_items)
+FROM generate_series(1, (pg_relation_size('idx_estudiante_id') / 8192) - 1) AS blkno,
+     LATERAL bt_page_stats('idx_estudiante_id', blkno)
+GROUP BY type;
+
+--cuestión 15--
+
+-- 1. Eliminar el índice anterior para evitar confusiones
+DROP INDEX IF EXISTS idx_estudiante_id;
+
+-- 2. Crear el índice de tipo Hash
+CREATE INDEX idx_estudiante_id_hash ON estudiantes2 USING hash (estudiante_id);
+
+
+SELECT
+    pg_relation_filepath('idx_estudiante_id_hash') AS ruta_fisica,
+    pg_size_pretty(pg_relation_size('idx_estudiante_id_hash')) AS tamaño_total,
+    (pg_relation_size('idx_estudiante_id_hash') / 8192) AS total_bloques
+FROM pg_class
+WHERE relname = 'idx_estudiante_id_hash';
+
+SELECT
+    (maxbucket + 1) AS total_cajones,
+    ROUND(ntuples::numeric / (maxbucket + 1), 2) AS media_tuplas_por_cajon
+FROM hash_metapage_info(get_raw_page('idx_estudiante_id_hash', 0));
+
