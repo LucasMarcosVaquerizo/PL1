@@ -327,3 +327,38 @@ SELECT
     ROUND(ntuples::numeric / (maxbucket + 1), 2) AS media_tuplas_por_cajon
 FROM hash_metapage_info(get_raw_page('idx_estudiante_id_hash', 0));
 
+
+--cuestión 17--
+
+CREATE INDEX idx_estudiantes2_indice
+ON estudiantes2(indice);
+
+--para ver donde está:
+SELECT oid, relname
+FROM pg_class
+WHERE relname = 'idx_estudiantes2_indice';
+
+SELECT pg_size_pretty(pg_relation_size('idx_estudiantes2_indice'));
+
+SELECT
+    pg_relation_size('idx_estudiantes2_indice')
+    / current_setting('block_size')::int AS bloques;
+
+SELECT *
+FROM bt_metap('idx_estudiantes2_indice');
+
+
+SELECT
+    type,
+    COUNT(*) AS paginas,
+    AVG(live_items) AS tuplas_media
+FROM generate_series(
+  1,
+  (pg_relation_size('idx_estudiantes2_indice')
+   / current_setting('block_size')::int) - 1
+) AS blkno
+CROSS JOIN LATERAL
+     bt_page_stats('idx_estudiantes2_indice', blkno)
+GROUP BY type
+ORDER BY type;
+
