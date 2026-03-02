@@ -135,9 +135,6 @@ WHERE estudiante_id = 30000000;
 
 --Cuestión 9--
 
-CREATE UNIQUE INDEX CONCURRENTLY idx_estudiante_id ON estudiantes (estudiante_id);
-CLUSTER estudiantes USING idx_estudiante_id;
-
 VACUUM FULL estudiantes;
 
 
@@ -306,6 +303,36 @@ FROM generate_series(1, (pg_relation_size('idx_estudiante_id') / 8192) - 1) AS b
      LATERAL bt_page_stats('idx_estudiante_id', blkno)
 GROUP BY type;
 
+--cuestión 14--
+
+-- Tamaño del bloque físico en bytes
+SELECT current_setting('block_size')::numeric AS B;
+
+-- 3. Obtenemos el tamaño de tupla
+SELECT
+    a.attname AS columna,
+    t.typname AS tipo_dato,
+    t.typlen AS tamaño_base_catalogo,
+    CASE
+        -- Si typlen es positivo, es un tipo de tamaño estricto (ej. int4 = 4 bytes)
+        WHEN t.typlen > 0 THEN t.typlen
+
+        -- Si es -1 (variable) y tiene un límite definido (ej. VARCHAR(50)), extraemos el límite
+        -- Se resta 4 al atttypmod por cómo PostgreSQL guarda esta cabecera internamente.
+        WHEN t.typlen = -1 AND a.atttypmod > -1 THEN (a.atttypmod - 4)
+
+        -- Si es variable y sin límite (ej. TEXT puro), marcamos un flag para el análisis estadístico
+        ELSE NULL
+    END AS peso_maximo_teorico_bytes,
+
+    t.typalign AS alineamiento_memoria
+FROM pg_attribute a
+JOIN pg_type t ON a.atttypid = t.oid
+JOIN pg_class c ON a.attrelid = c.oid
+WHERE c.relname = 'estudiantes'
+  AND a.attnum > 0     -- Ignorar columnas ocultas del sistema (ctid, xmin...)
+  AND NOT a.attisdropped; -- Ignorar columnas que han sido borradas (DROP COLUMN)
+
 --cuestión 15--
 
 -- 1. Eliminar el índice anterior para evitar confusiones
@@ -361,4 +388,41 @@ CROSS JOIN LATERAL
      bt_page_stats('idx_estudiantes2_indice', blkno)
 GROUP BY type
 ORDER BY type;
+
+-- Cuestión 24 --
+SELECT
+    schemaname AS esquema,
+    tablename AS tabla,
+    indexname AS nombre_indice,
+    indexdef AS definicion_sql
+FROM
+    pg_indexes
+WHERE
+    schemaname NOT IN ('pg_catalog', 'information_schema')
+ORDER BY
+    tablename, indexname;
+
+CREATE INDEX idx_carrera_indice
+ON estudiantes USING btree (codigo_carrera, indice);
+
+-- Cuestión 25 --
+-- Preparación
+DROP TABLE estudiantes;
+CREATE TABLE IF NOT EXISTS estudiantes (
+    estudiante_id SERIAL PRIMARY KEY,
+    nombre TEXT,
+    codigo_carrera INT,
+    edad INT,
+    indice INT
+);
+
+DO $$
+BEGIN
+    EXECUTE format('
+COPY estudiantes(nombre, codigo_carrera, edad, indice)
+FROM %L
+DELIMITER '',''
+CSV;
+', current_setting('app.ruta_estudiantes'));
+END $$;
 
