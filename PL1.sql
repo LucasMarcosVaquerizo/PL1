@@ -362,3 +362,58 @@ CROSS JOIN LATERAL
 GROUP BY type
 ORDER BY type;
 
+--cuestión 19--
+
+CREATE INDEX idx_estudiantes2_indice_hash
+ON estudiantes2 USING HASH (indice);
+
+VACUUM ANALYZE estudiantes2;
+
+--para ver la ruta, el tamaño total y el total de bloques:
+SELECT
+    pg_relation_filepath('idx_estudiantes2_indice_hash') AS ruta_fisica,
+    pg_size_pretty(pg_relation_size('idx_estudiantes2_indice_hash')) AS tamaño_total,
+    (pg_relation_size('idx_estudiantes2_indice_hash') / 8192) AS total_bloques_8kb
+FROM pg_class
+WHERE relname = 'idx_estudiantes2_indice_hash';
+
+--para ver los cajones y las tuplas que hay de media por cajón:
+SELECT
+    (maxbucket + 1) AS total_cajones,
+    ROUND(ntuples::numeric / (maxbucket + 1), 2) AS media_tuplas_por_cajon
+FROM hash_metapage_info(get_raw_page('idx_estudiantes2_indice_hash', 0));
+
+--Cuestión 22--
+
+DROP TABLE estudiantes2 CASCADE;
+
+CREATE TABLE IF NOT EXISTS estudiantes (
+    estudiante_id SERIAL PRIMARY KEY,
+    nombre TEXT,
+    codigo_carrera INT,
+    edad INT,
+    indice INT
+);
+
+COPY estudiantes(nombre, codigo_carrera, edad, indice)
+FROM '\Program Files\PostgreSQL\16\data\estudiantes.csv'
+DELIMITER ','
+CSV;
+
+SELECT COUNT(*) FROM estudiantes;
+
+--ínidice tipo árbol sobre indice:
+CREATE INDEX idx_estudiantes_indice
+ON estudiantes (indice);
+
+--indice tipo árbol sobre codigo_carrera:
+CREATE INDEX idx_estudiantes_codigo_carrera
+ON estudiantes (codigo_carrera);
+
+--índice tipo Hash sobre estudiante_id:
+CREATE INDEX idx_estudiantes_estudiante_id_hash
+ON estudiantes USING HASH (estudiante_id);
+
+--indice Hash sobre índice:
+CREATE INDEX idx_estudiantes_indice_hash
+ON estudiantes USING HASH (indice);
