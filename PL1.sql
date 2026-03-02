@@ -445,6 +445,68 @@ ON estudiantes USING HASH (estudiante_id);
 CREATE INDEX idx_estudiantes_indice_hash
 ON estudiantes USING HASH (indice);
 
+--Cuestión 23--
+
+--antes de cada cosnulta (para reiniciar estadísticas):
+SELECT pg_stat_reset();
+--Después de cada consulta (estadísticas):
+SELECT
+    relname,
+    seq_scan,
+    idx_scan,
+    seq_tup_read,
+    idx_tup_fetch
+FROM pg_stat_user_tables
+WHERE relname = 'estudiantes';
+SELECT
+    indexrelname,
+    idx_scan,
+    idx_tup_read
+FROM pg_stat_user_indexes
+WHERE relname = 'estudiantes';
+SELECT
+    indexrelname,
+    idx_blks_read,
+    idx_blks_hit
+FROM pg_statio_user_indexes
+WHERE relname = 'estudiantes';
+
+
+
+--1.
+SELECT *
+FROM estudiantes
+WHERE codigo_carrera = 50;
+
+--2.
+SELECT *
+FROM estudiantes
+WHERE estudiante_id = 80000;
+
+--3.
+SELECT *
+FROM estudiantes
+WHERE indice BETWEEN 100 AND 200;
+
+--4.
+SELECT COUNT(*)
+FROM estudiantes
+WHERE edad = 20;
+
+--5.
+SELECT indice, COUNT(*)
+FROM estudiantes
+GROUP BY indice;
+
+--6.
+SELECT codigo_carrera, AVG(edad)
+FROM estudiantes
+GROUP BY codigo_carrera;
+
+--7.
+INSERT INTO estudiantes(nombre,codigo_carrera,edad,indice)
+VALUES ('nuevo',10,21,100);
+
 -- Cuestión 24 --
 SELECT
     schemaname AS esquema,
