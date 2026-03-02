@@ -508,6 +508,11 @@ INSERT INTO estudiantes(nombre,codigo_carrera,edad,indice)
 VALUES ('nuevo',10,21,100);
 
 -- Cuestión 24 --
+DROP INDEX IF EXISTS idx_estudiantes_indice;
+DROP INDEX IF EXISTS idx_estudiantes_indice_hash;
+DROP INDEX IF EXISTS idx_estudiantes_codigo_carrera;
+DROP INDEX IF EXISTS idx_estudiantes_estudiante_id_hash;
+
 SELECT
     schemaname AS esquema,
     tablename AS tabla,
